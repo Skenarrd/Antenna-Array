@@ -18,13 +18,13 @@ class F_n:
         F_n = np.zeros_like(self.theta, dtype=np.complex128)
         
         for n in range(self.N):
-            # Фазовый сдвиг для одномерной решетки
+            # Фазовый сдвиг для линейки
             phase = self.k * n * self.dx * (np.sin(self.theta) - np.sin(self.theta_0))
             F = np.abs(self.A[n]) * np.exp(1j * (phase - self.psi[n]))
             F_n += F
         return F_n
 
-class F_n_magnitude: # модуль комплексной амплитуды
+class F_n_magnitude: # нормированный пространственный МР
     def __init__(self, F_n):
         self.F_n = F_n
 
@@ -39,7 +39,7 @@ class F_1: # нормированная ДН
         self.theta = theta
 
     def calc(self):
-        return self.F_n_magnitude * np.cos(self.theta)
+        return self.F_n_magnitude * np.sqrt(np.cos(self.theta))
     
 class F_n_dB: # ДН в дБ
     def __init__(self, F_1):
