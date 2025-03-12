@@ -1,3 +1,8 @@
+'''
+В гексагональной сетке элементы могут оказаться слишком 
+близко друг к другу после смещений, с учетом того, 
+что создаются симметричные копии
+'''
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial.distance import cdist
@@ -36,15 +41,19 @@ def rect_random_grid_2d(
 
 
 # Внедрение гексагональной сетки координат
-def hex_grid_q1(nx: int, ny: int, dx: float, dy: float) -> npt.NDArray:
-    """Создает гексагональную сетку в первом квадранте."""
-    hex_dy = dy * np.sqrt(3) / 2  # Вертикальное расстояние между рядами
+def hex_grid_q1(nx: int, ny: int, dx: float, dy: float, min_distance: float) -> npt.NDArray:
+    """Создает гексагональную сетку в первом квадранте с отступом от осей."""
+    hex_dy = dy * np.sqrt(3) / 2
+    
+    # Добавляем отступ от осей равный половине минимального расстояния
+    axis_offset = min_distance / 2
+    
     q1 = []
     for row in range(ny):
-        x_shift = (row % 2) * dx / 2  # Смещение четных/нечетных рядов
+        x_shift = (row % 2) * dx / 2
         for col in range(nx):
-            x = col * dx + x_shift
-            y = row * hex_dy
+            x = col * dx + x_shift + axis_offset  # Добавляем отступ по X
+            y = row * hex_dy + axis_offset        # Добавляем отступ по Y
             q1.append((x, y))
     return np.array(q1)
 
@@ -52,43 +61,43 @@ def hex_grid_q1(nx: int, ny: int, dx: float, dy: float) -> npt.NDArray:
 def rect_random_symmetry_grid_2d(
         nx: int, ny: int, dx: float, dy: float,
         max_shift_x: float, max_shift_y: float,
-        min_distance: float = 0.0
+        min_distance: float = 0.0,
+        max_try_count: int = 1500
 ) -> npt.NDArray:
-    """Генерирует симметричную случайную сетку с проверкой минимального расстояния между элементами."""
-
-    # Инициализация флага для проверки валидности сетки
+    try_count = 0
     valid = False
-    while not valid:
-        # 1. Генерация гексагональной сетки в первом квадранте
-        # nx//2 и ny//2 - количество элементов в половине сетки по осям X и Y
-        q1 = hex_grid_q1(nx // 2, ny // 2, dx, dy)
-
-        # 2. Случайные смещения элементов внутри первого квадранта
-        # Генерация смещений в диапазоне [-max_shift_x, max_shift_x] для каждой координаты
+    while not valid and try_count < max_try_count:
+        try_count += 1
+        # Передаем min_distance в функцию hex_grid_q1
+        q1 = hex_grid_q1(nx // 2, ny // 2, dx, dy, min_distance)
+        
+        # Ограничиваем смещения, чтобы элементы не приближались к осям ближе min_distance/2
         shift_x = np.random.uniform(-max_shift_x, max_shift_x, q1.shape[0])
         shift_y = np.random.uniform(-max_shift_y, max_shift_y, q1.shape[0])
-        # Применение смещений к координатам элементов
+        
         shifted = q1.copy()
-        shifted[:, 0] += shift_x  # Смещение по X
-        shifted[:, 1] += shift_y  # Смещение по Y
-
-        # 3. Создание полной симметричной сетки из первого квадранта
-        # Отражаем элементы в 4 квадранта: (x,y), (-x,y), (-x,-y), (x,-y)
+        shifted[:, 0] += shift_x
+        shifted[:, 1] += shift_y
+        
+        # Дополнительная проверка: элементы не должны быть ближе min_distance/2 к осям
+        if np.any(shifted[:, 0] < min_distance/2) or np.any(shifted[:, 1] < min_distance/2):
+            continue
+            
         full_grid = create_symmetry_grid_2d(shifted)
-
-        # 4. Проверка минимального расстояния между элементами
+        
         if min_distance > 0:
-            # Вычисление попарных расстояний между всеми элементами
             dist_matrix = cdist(full_grid, full_grid)
-            # Игнорирование расстояния элемента до самого себя (замена диагонали на бесконечность)
             np.fill_diagonal(dist_matrix, np.inf)
-            # Проверка: все расстояния >= min_distance
             valid = np.all(dist_matrix >= min_distance)
         else:
-            # Если min_distance не задан, сетка всегда валидна
             valid = True
 
-    # 5. Возврат сгенерированной сетки, удовлетворяющей условиям
+    if not valid:
+        raise ValueError(
+            f"Не удалось создать сетку с заданными параметрами после {max_try_count} попыток. "
+            f"Попробуйте увеличить dx, dy или уменьшить min_distance"
+        )
+    
     return full_grid
 
 
