@@ -40,6 +40,34 @@ def rect_random_grid_2d(
     return array
 
 
+def create_hex_grid(nx: int, ny: int, dx: float, dy: float) -> np.ndarray:
+    """Создает классическую гексагональную сетку.
+    
+    Параметры:
+    nx, ny : int - Количество элементов по осям X и Y
+    dx, dy : float - Шаг между элементами по осям X и Y
+    
+    Returns:
+    np.ndarray - Массив координат точек размером (N, 2)
+    """
+    # Вычисляем вертикальный шаг для гексагональной сетки
+    hex_dy = dy * np.sqrt(3) / 2
+    
+    points = []
+    # Центрируем сетку относительно (0,0)
+    x_offset = (nx - 1) * dx / 2
+    y_offset = (ny - 1) * hex_dy / 2
+    
+    for row in range(ny):
+        # Смещение для создания гексагональной структуры
+        x_shift = (row % 2) * dx / 2
+        for col in range(nx):
+            x = col * dx + x_shift - x_offset
+            y = row * hex_dy - y_offset
+            points.append((x, y))
+            
+    return np.array(points)
+
 # Внедрение гексагональной сетки координат
 def hex_grid_q1(nx: int, ny: int, dx: float, dy: float, min_distance: float) -> npt.NDArray:
     """Создает гексагональную сетку в первом квадранте с отступом от осей."""
@@ -58,47 +86,121 @@ def hex_grid_q1(nx: int, ny: int, dx: float, dy: float, min_distance: float) -> 
     return np.array(q1)
 
 
+def create_full_hex_grid(nx: int, ny: int, dx: float, dy: float) -> npt.NDArray:
+    """
+    Создает полную гексагональную сетку с учетом симметрии.
+    
+    Параметры:
+    nx, ny : int - Размеры сетки по осям X и Y
+    dx, dy : float - Шаг между элементами по осям X и Y
+        
+    Returns: np.ndarray - Массив координат точек размером (N, 2), 
+    где N - общее число точек
+    """
+    # Вычисляем вертикальный шаг для гексагональной сетки
+    hex_dy = dy * np.sqrt(3) / 2
+    full_nx = nx
+    full_ny = ny
+    
+    points = []
+    
+    # Центральная точка всегда на (0,0)
+    points.append((0.0, 0.0))
+    
+    # Создаем точки во всех четырех квадрантах одновременно
+    for row in range(-full_ny//2, full_ny//2 + 1):
+        # Для создания гексагональной структуры каждая четная строка
+        # смещается на половину шага по X
+        x_shift = (abs(row) % 2) * dx / 2
+        for col in range(-full_nx//2, full_nx//2 + 1):
+            x = col * dx + x_shift
+            y = row * hex_dy
+            
+            # Пропускаем центральную точку, так как она уже добавлена
+            if x == 0 and y == 0:
+                continue
+                
+            points.append((x, y))
+    
+    return np.array(points)
+
+
 def rect_random_symmetry_grid_2d(
         nx: int, ny: int, dx: float, dy: float,
         max_shift_x: float, max_shift_y: float,
         min_distance: float = 0.0,
         max_try_count: int = 1500
 ) -> npt.NDArray:
+    """
+    Создает симметричную случайную сетку с проверкой минимального расстояния.
+    
+    Параметры:
+    nx, ny : int - Размеры сетки по осям X и Y
+    dx, dy : float - Базовый шаг между элементами
+    max_shift_x, max_shift_y : float - Максимальные случайные смещения по осям
+    min_distance : float - Минимально допустимое расстояние между элементами
+    max_try_count : int - Максимальное число попыток создания валидной сетки
+        
+    Returns: np.ndarray - Массив координат точек с соблюдением всех условий
+        
+    Raises: ValueError - Если не удалось создать валидную сетку за max_try_count попыток
+    """
     try_count = 0
     valid = False
+    
     while not valid and try_count < max_try_count:
         try_count += 1
-        # Передаем min_distance в функцию hex_grid_q1
-        q1 = hex_grid_q1(nx // 2, ny // 2, dx, dy, min_distance)
         
-        # Ограничиваем смещения, чтобы элементы не приближались к осям ближе min_distance/2
-        shift_x = np.random.uniform(-max_shift_x, max_shift_x, q1.shape[0])
-        shift_y = np.random.uniform(-max_shift_y, max_shift_y, q1.shape[0])
+        # Создаем базовую гексагональную сетку
+        grid = create_full_hex_grid(nx, ny, dx, dy)
         
-        shifted = q1.copy()
-        shifted[:, 0] += shift_x
-        shifted[:, 1] += shift_y
+        # Массивы для хранения смещений каждой точки
+        shift_x = np.zeros(grid.shape[0])
+        shift_y = np.zeros(grid.shape[0])
         
-        # Дополнительная проверка: элементы не должны быть ближе min_distance/2 к осям
-        if np.any(shifted[:, 0] < min_distance/2) or np.any(shifted[:, 1] < min_distance/2):
-            continue
-            
-        full_grid = create_symmetry_grid_2d(shifted)
+        # Применяем случайные смещения с сохранением симметрии
+        for i, (x, y) in enumerate(grid):
+            # Генерируем смещения только для точек в первом квадранте
+            if x > 0 and y > 0:
+                # Генерируем случайные смещения
+                sx = np.random.uniform(-max_shift_x, max_shift_x)
+                sy = np.random.uniform(-max_shift_y, max_shift_y)
+                
+                # Применяем смещение к текущей точке
+                shift_x[i] = sx
+                shift_y[i] = sy
+                
+                # Находим и смещаем симметричные точки в других квадрантах
+                for px, py in [(x, -y), (-x, y), (-x, -y)]:
+                    idx = np.where((grid[:, 0] == px) & (grid[:, 1] == py))[0]
+                    if len(idx) > 0:
+                        # Учитываем знак координат при смещении
+                        shift_x[idx[0]] = sx * (1 if x > 0 else -1)
+                        shift_y[idx[0]] = sy * (1 if y > 0 else -1)
         
+        # Применяем все смещения к сетке
+        shifted_grid = grid.copy()
+        shifted_grid[:, 0] += shift_x
+        shifted_grid[:, 1] += shift_y
+        
+        # Проверяем условие минимального расстояния
         if min_distance > 0:
-            dist_matrix = cdist(full_grid, full_grid)
+            # Вычисляем матрицу расстояний между всеми точками
+            dist_matrix = cdist(shifted_grid, shifted_grid)
+            # Исключаем расстояния точек до самих себя
             np.fill_diagonal(dist_matrix, np.inf)
+            # Проверяем, что все расстояния не меньше min_distance
             valid = np.all(dist_matrix >= min_distance)
         else:
             valid = True
-
+            
     if not valid:
         raise ValueError(
             f"Не удалось создать сетку с заданными параметрами после {max_try_count} попыток. "
             f"Попробуйте увеличить dx, dy или уменьшить min_distance"
         )
     
-    return full_grid
+    return shifted_grid
 
 
 '''
@@ -141,3 +243,4 @@ def rect_random_symmetry_size_grid_2d(nx: int, ny: int, size_x: float, size_y: f
     y = np.random.uniform(y_min, y_max, q_count)
     q1 = np.column_stack((x, y))
     return create_symmetry_grid_2d(q1)
+
