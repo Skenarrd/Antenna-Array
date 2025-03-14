@@ -37,7 +37,6 @@ if __name__ == "__main__":
     )
     '''
     coord = create_hex_grid(nx=8, ny=8, dx=0.7, dy=0.7)
-    # Код заработал, когда были увеличены dx, dy и уменьшено min_distance
     # coord = rect_random_symmetry_size_grid_2d(10, 10, 0.3, 0.3, 0.015, 0.015)
     # coord = np.array([0.0, 0.0], ndmin=2)
     # print(coord.shape)
