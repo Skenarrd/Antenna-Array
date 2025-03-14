@@ -26,25 +26,25 @@ def save_array_to_tsv(filename: str, coord: np.ndarray, freq: float):
     worksheet = workbook.worksheets[0]
     
     # Записываем заголовки
-    worksheet.cells.get(0, 0).put_value("# unit: meters")
-    worksheet.cells.get(1, 0).put_value(f"# design frequency: {int(freq)} Hz")
+    worksheet.cells.get(0, 0).put_value("# Created by Antenna Magus 5.4.0.1919")
+    worksheet.cells.get(1, 0).put_value("# On Tuesday, January 29, 2019 at 04:06:23 PM")
+    worksheet.cells.get(2, 0).put_value("# unit: meters")
+    worksheet.cells.get(3, 0).put_value(f"# design frequency: {int(freq)} Hz")
     
-    # worksheet.Cells.Get(2, 0).PutValue("# Element\tX\tY\tZ\tMagnitude\tPhase\tPhi\tTheta")
     # Записываем заголовки колонок без кавычек, используя отдельные ячейки
-    # во избежание появления кавычек в файле с данными
-    worksheet.cells.get(2, 0).put_value("# Element")
-    worksheet.cells.get(2, 1).put_value("X")
-    worksheet.cells.get(2, 2).put_value("Y")
-    worksheet.cells.get(2, 3).put_value("Z")
-    worksheet.cells.get(2, 4).put_value("Magnitude")
-    worksheet.cells.get(2, 5).put_value("Phase")
-    worksheet.cells.get(2, 6).put_value("Phi")
-    worksheet.cells.get(2, 7).put_value("Theta")
-    worksheet.cells.get(2, 8).put_value("Gamma")
+    worksheet.cells.get(4, 0).put_value("# Element")
+    worksheet.cells.get(4, 1).put_value("X")
+    worksheet.cells.get(4, 2).put_value("Y")
+    worksheet.cells.get(4, 3).put_value("Z")
+    worksheet.cells.get(4, 4).put_value("Magnitude")
+    worksheet.cells.get(4, 5).put_value("Phase")
+    worksheet.cells.get(4, 6).put_value("Phi")
+    worksheet.cells.get(4, 7).put_value("Theta")
+    worksheet.cells.get(4, 8).put_value("Gamma")
     
     # Записываем данные
     for i, (x, y) in enumerate(coord, 1):
-        row = i + 2  # Начинаем с 4-й строки (после заголовков)
+        row = i + 4  # Начинаем с 5-й строки (после заголовков)
         worksheet.cells.get(row, 0).put_value(str(i))  # Номер элемента
         worksheet.cells.get(row, 1).put_value(f"{x:.8f}")  # X coord
         worksheet.cells.get(row, 2).put_value(f"{y:.8f}")  # Y coord
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     min_distance=0.15 * wavelength
     )
     '''
-    coord = create_hex_grid(nx=8, ny=8, dx=0.7 * wavelength, dy=0.7 * wavelength)
+    coord = create_hex_grid(nx=8, ny=8, dx=0 * wavelength, dy=0 * wavelength)
     # Код заработал, когда были увеличены dx, dy и уменьшено min_distance
     # coord = rect_random_symmetry_size_grid_2d(10, 10, 0.3, 0.3, 0.015, 0.015)
     # coord = np.array([0.0, 0.0], ndmin=2)
