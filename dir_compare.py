@@ -81,11 +81,19 @@ if __name__ == "__main__":
     # Создаем фигуру для сравнительного графика
     plt.figure(figsize=(12, 8))
     
-    # Строим расчетную ДН
-    plt.plot(theta_calc, F_dB_calc, 'b-', linewidth=2, label='ДН из Python')
     
-    # Строим ДН из CST
-    plt.plot(theta_cst, abs_dir_cst, 'r-', linewidth=2, label='ДН из CST')
+    # Вариант 1 - нормировка обеих диаграмм к их максимумам
+    F_dB_calc_norm = F_dB_calc - np.max(F_dB_calc)
+    abs_dir_cst_norm = abs_dir_cst - np.max(abs_dir_cst)
+    
+    # Построение нормированных диаграмм
+    plt.plot(theta_calc, F_dB_calc_norm, 'b-', linewidth=2, label='ДН из Python')
+    plt.plot(theta_cst, abs_dir_cst_norm, 'r-', linewidth=2, label='ДН из CST')
+    
+
+    # Вариант 2 - ненормирвоанные диаграммы
+    # plt.plot(theta_calc, F_dB_calc, 'b-', linewidth=2, label='ДН из Python')
+    # plt.plot(theta_cst, abs_dir_cst, 'r-', linewidth=2, label='ДН из CST')
     
     plt.xticks(np.arange(-90, 90 + 1, 10.0))
     plt.grid(True)
@@ -97,10 +105,12 @@ if __name__ == "__main__":
     plt.ylim([-50, 0])
     plt.legend()
     
+    '''
     # Линия, указывающая направление фазирования
     if theta_range[0] <= theta_0 <= theta_range[1]:
         plt.axvline(x=theta_0, color='g', linestyle='--', 
                    label=f'Направление фазирования θ₀={theta_0}°')
-    
+    '''
+                   
     plt.tight_layout()
-    plt.show()
+    plt.show() 
